@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Sync_Data_API.Data;
 using Sync_Data_API.Models;
 
@@ -19,15 +20,20 @@ namespace Sync_Data_API.Controllers
         }
 
         [HttpGet(Name = "Get All User")]
-        public IEnumerable<Person> Get()
+        public async Task<ActionResult<IEnumerable<Person>>> Get()
         {
-            return Person.people;
+            var people = await _context.Persons.ToListAsync();
+            if (people == null)
+            {
+                return NotFound("Data tidak ditemukan");
+            }
+            return Ok(people);
         }
 
         [HttpGet("{id}", Name = "Get User By Id")]
-        public ActionResult Get(int id)
+        public async Task<ActionResult> Get(int id)
         {
-            Person? foundPerson = Person.people.FirstOrDefault(x => x.Id == id);
+            var foundPerson = await _context.Persons.FindAsync(id);
             if (foundPerson == null)
             {
                 return NotFound();
@@ -38,7 +44,7 @@ namespace Sync_Data_API.Controllers
         [HttpGet("detail/{id}", Name = "Get User Detail By Id")]
         public async Task<ActionResult> GetDetail(int id)
         {
-            Person? foundPerson = Person.people.FirstOrDefault(x => x.Id == id);
+            var foundPerson = await _context.Persons.FindAsync(id);
             if (foundPerson == null)
             {
                 return NotFound();
@@ -78,30 +84,31 @@ namespace Sync_Data_API.Controllers
             }
         }
 
-        [HttpPost("sync/{id}", Name = "Sync Data From API")]
-        public async Task<ActionResult> SyncDataFromAPI(int id)
+        [HttpPost("sync", Name = "Sync Data From API")]
+        public async Task<ActionResult> SyncDataFromAPI()
         {
-            var response = await _httpClient!.GetFromJsonAsync<PersonNew>($"https://dummy-user-tan.vercel.app/user/{id}");
+            var response = await _httpClient!.GetFromJsonAsync<List<PersonNew>>($"https://dummy-user-tan.vercel.app/user");
             if (response == null)
             {
                 return NotFound("Data tidak ditemukan di API");
             }
 
-            var existing = await _context!.PersonNews.FindAsync(id);
-            if (existing != null)
+            foreach (var item in response)
             {
-                existing.Name = response.Name;
-                existing.Saldo = response.Saldo;
-                existing.Hutang = response.Hutang;
-                await _context.SaveChangesAsync();
-                return Ok("Data berhasil disinkronkan");
-            }
-            else
-            {
-                _context.PersonNews.Add(response);
-            }
+                var existing = await _context.PersonNews.FindAsync(item.Id);
+                if (existing != null)
+                {
+                    existing.Name = item.Name;
+                    existing.Saldo = item.Saldo;
+                    existing.Hutang = item.Hutang;
+                }
+                else
+                {
+                    _context.PersonNews.Add(item);
+                }
+            };
             await _context.SaveChangesAsync();
-            return Ok("Data berhasil disinkronkan dan disimpan ke database");
+            return Ok(response);
         }
     }
 }

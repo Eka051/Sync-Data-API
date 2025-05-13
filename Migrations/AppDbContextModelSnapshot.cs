@@ -21,6 +21,51 @@ namespace Sync_Data_API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Sync_Data_API.Models.Person", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Age")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Persons");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Age = 30,
+                            Name = "bima"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Age = 25,
+                            Name = "yoga"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Age = 40,
+                            Name = "ciko"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Age = 35,
+                            Name = "wudd"
+                        });
+                });
+
             modelBuilder.Entity("Sync_Data_API.Models.PersonNew", b =>
                 {
                     b.Property<int>("Id")
